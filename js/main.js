@@ -298,6 +298,96 @@ addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 });
 
+/* ── smooth in-page navigation (eased, cancellable) ── */
+
+let scrollAnim = null;
+function cancelScrollAnim() {
+  if (scrollAnim) { cancelAnimationFrame(scrollAnim); scrollAnim = null; }
+}
+
+function smoothTo(target) {
+  const el = typeof target === "string" ? document.querySelector(target) : target;
+  if (!el) return;
+  const max = document.documentElement.scrollHeight - innerHeight;
+  const dest = Math.max(0, Math.min(el.offsetTop, max));
+  if (reduced) { scrollTo(0, dest); return; }
+  cancelScrollAnim();
+  const startY = scrollY;
+  const dist = dest - startY;
+  if (Math.abs(dist) < 2) return;
+  const dur = Math.min(1500, 420 + Math.abs(dist) * 0.32);
+  const t0 = performance.now();
+  const ease = (x) => 1 - Math.pow(1 - x, 3); /* easeOutCubic */
+  function step(now) {
+    const k = Math.min(1, (now - t0) / dur);
+    scrollTo(0, startY + dist * ease(k));
+    scrollAnim = k < 1 ? requestAnimationFrame(step) : null;
+  }
+  scrollAnim = requestAnimationFrame(step);
+}
+
+/* hand control back the instant the visitor scrolls themselves */
+["wheel", "touchstart", "keydown"].forEach((ev) =>
+  addEventListener(ev, cancelScrollAnim, { passive: true })
+);
+
+/* in-page anchor links glide instead of jumping */
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  const href = a.getAttribute("href");
+  if (href.length < 2 || !document.querySelector(href)) return;
+  e.preventDefault();
+  smoothTo(href);
+});
+
+/* ── chapter navigation rail ──────────────── */
+
+const NAV = [
+  ["top", "Arrival"], ["heritage", "1892"], ["courtyard", "Morning"],
+  ["family", "Home"], ["stella", "Stella & Zephyr"], ["table", "The Table"],
+  ["sapphire", "Sapphire"], ["turquoise", "Turquoise"], ["coral", "Coral"],
+  ["ruby", "Ruby"], ["garden", "Garden"], ["stay", "Stay"],
+];
+const navButtons = [];
+const navTargets = [];
+let navActive = -1;
+
+function buildNav() {
+  if (mobile) return;
+  const rail = document.createElement("nav");
+  rail.className = "dotnav";
+  rail.setAttribute("aria-label", "Chapters");
+  for (const [id, label] of NAV) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-label", label);
+    b.innerHTML = '<span class="lbl"></span><span class="dot"></span>';
+    b.querySelector(".lbl").textContent = label;
+    b.addEventListener("click", () => smoothTo(el));
+    rail.appendChild(b);
+    navButtons.push(b);
+    navTargets.push(el);
+  }
+  document.body.appendChild(rail);
+}
+
+function updateNav() {
+  if (!navTargets.length) return;
+  const probe = scrollCur + vh * 0.5;
+  let idx = 0;
+  for (let i = 0; i < navTargets.length; i++) {
+    if (navTargets[i].offsetTop <= probe) idx = i;
+  }
+  if (idx !== navActive) {
+    navButtons[navActive]?.classList.remove("on");
+    navButtons[idx]?.classList.add("on");
+    navActive = idx;
+  }
+}
+
 /* ── the walk ────────────────────────────── */
 
 let lastInk = "", lastAccent = "", lastBg = "";
@@ -307,7 +397,7 @@ function frame() {
   requestAnimationFrame(frame);
   const t = clock.getElapsedTime();
 
-  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : 0.075);
+  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : 0.14);
   const p = clamp01(scrollCur / scrollMax);
 
   samplePalette(p);
@@ -323,6 +413,7 @@ function frame() {
   if (progressBar) progressBar.style.transform = `scaleY(${p})`;
   if (tintEl) tintEl.style.opacity = live.tint.toFixed(3);
   applyPhotos(t);
+  updateNav();
 
   /* big words drift slower than the world — depth */
   if (!reduced) {
@@ -367,6 +458,7 @@ function start() {
     dust.material.uniforms.uPx.value = px;
     stars.material.uniforms.uPx.value = px;
   }
+  buildNav();
   frame();
 
   const heroPanel = document.querySelector(".hero .panel");

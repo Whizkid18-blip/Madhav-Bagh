@@ -15,7 +15,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  scroll-behavior: smooth;
+  /* JS drives the eased nav jumps; keep native scroll instant so they don't fight */
+  scroll-behavior: auto;
 }
 
 body {
@@ -195,6 +196,60 @@ header {
   transform: scaleY(0);
   transform-origin: top;
 }
+
+/* ── chapter rail ───────────────────────────── */
+
+.dotnav {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.dotnav button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 3px 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.dotnav .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  transition: background 0.4s ease, transform 0.4s ease;
+}
+
+.dotnav button:hover .dot { background: var(--ink); transform: scale(1.25); }
+.dotnav button.on .dot { background: var(--accent); transform: scale(1.4); }
+
+.dotnav .lbl {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  text-shadow: 0 1px 3px var(--bg), 0 0 14px var(--bg);
+}
+
+.dotnav button:hover .lbl { opacity: 1; transform: none; }
+.dotnav button.on .lbl { opacity: 0.85; transform: none; }
+
+@media (max-width: 860px) { .dotnav { display: none; } }
 
 /* ── chapters ───────────────────────────────── */
 
