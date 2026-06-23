@@ -1,0 +1,572 @@
+/* ─────────────────────────────────────────────
+   MADHAV BAGH — Royal Heritage Stay · Est. 1892
+   A scroll-journey through a living mansion.
+   ───────────────────────────────────────────── */
+
+:root {
+  --bg: #0e0b1f;
+  --ink: #f2ecdc;
+  --accent: #d9a441;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  --guj: "Noto Serif Gujarati", serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 300;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent); color: #1a1206; }
+
+body.no-webgl {
+  background: radial-gradient(120% 120% at 50% 0%, #261b3f 0%, #0e0b1f 55%, #050410 100%);
+}
+
+/* ── fixed layers ───────────────────────────── */
+
+/* real photographs of the palace, crossfaded by scroll */
+.photo-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.08);
+  will-change: opacity, transform;
+}
+
+/* Stella's portrait is vertical — keep her head in frame when it fills the screen */
+.photo--stella { object-position: 50% 32%; }
+
+/* the day-cycle palette grades every photograph */
+.photo-tint {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--bg);
+  opacity: 0.45;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(ellipse 110% 90% at 50% 45%, transparent 52%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.grain {
+  position: fixed;
+  inset: -100px;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  animation: grainShift 1.4s steps(4) infinite;
+}
+
+@keyframes grainShift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-34px, 22px); }
+  50%  { transform: translate(18px, -40px); }
+  75%  { transform: translate(-26px, -18px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ── intro curtain ──────────────────────────── */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  transition: opacity 1.4s ease 0.3s;
+}
+
+.intro.gone { opacity: 0; pointer-events: none; }
+
+.intro-mono {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-family: var(--serif);
+  font-size: clamp(10px, 1.4vw, 13px);
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.intro-rule {
+  display: block;
+  width: clamp(30px, 8vw, 90px);
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* ── chrome ─────────────────────────────────── */
+
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(18px, 3vw, 32px) clamp(20px, 4.5vw, 56px);
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.reserve {
+  font-size: 10.5px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.85em 1.7em;
+  border: 1px solid color-mix(in srgb, var(--ink) 38%, transparent);
+  border-radius: 99px;
+  transition: background 0.45s ease, color 0.45s ease, border-color 0.45s ease;
+}
+
+.reserve:hover {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 10;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+}
+
+/* ── chapters ───────────────────────────────── */
+
+main { position: relative; z-index: 3; }
+
+.chapter { height: 190vh; position: relative; }
+.chapter.hero { height: 130vh; }
+.chapter.room { height: 150vh; }
+.chapter.finale { height: 170vh; }
+
+.panel {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 clamp(24px, 8vw, 130px);
+}
+
+/* a breath of the chapter's own air behind the words */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--bg) 74%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 40%, transparent) 46%,
+    transparent 78%
+  );
+}
+
+.room--alt .panel::before {
+  background: linear-gradient(
+    260deg,
+    color-mix(in srgb, var(--bg) 74%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 40%, transparent) 46%,
+    transparent 78%
+  );
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4.5vh;
+}
+
+.label::before {
+  content: "";
+  display: block;
+  width: 52px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.65;
+  flex: none;
+}
+
+.guj { font-family: var(--guj); letter-spacing: 0.1em; white-space: nowrap; }
+
+/* oversized display type */
+
+.display {
+  font-family: var(--serif);
+  font-weight: 340;
+  font-size: clamp(3.6rem, 16vw, 15rem);
+  line-height: 0.88;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  margin: 0 0 5vh;
+  will-change: transform;
+}
+
+.display .ln { display: block; }
+.display .ind { margin-left: 0.62em; }
+.display .it { font-style: italic; color: var(--accent); }
+
+.display .ch {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(115%) rotate(4deg);
+  transition:
+    transform 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.7s ease;
+  transition-delay: calc(var(--i) * 40ms);
+  will-change: transform, opacity;
+}
+
+.display .sp { display: inline-block; white-space: pre; }
+
+.panel.in .ch { opacity: 1; transform: none; }
+
+/* body copy */
+
+/* no boxes — a soft halo of the chapter's own sky keeps
+   every word legible over any photograph, light or dark */
+.display,
+.label,
+.lede,
+.emline,
+.addr,
+.roman,
+.cue {
+  text-shadow:
+    0 0 2px var(--bg),
+    0 1px 4px var(--bg),
+    0 0 18px color-mix(in srgb, var(--bg) 92%, transparent),
+    0 0 48px color-mix(in srgb, var(--bg) 80%, transparent);
+}
+
+.figure-card figcaption { text-shadow: none; }
+
+.lede {
+  max-width: 37em;
+  font-size: clamp(1.02rem, 1.45vw, 1.32rem);
+  line-height: 1.85;
+  color: color-mix(in srgb, var(--ink) 96%, transparent);
+}
+
+.lede em {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--accent);
+  font-size: 1.1em;
+}
+
+.emline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 340;
+  font-size: clamp(1.3rem, 2.4vw, 2.15rem);
+  line-height: 1.4;
+  color: var(--accent);
+  margin-top: 4.5vh;
+  max-width: 24em;
+}
+
+/* reveal choreography */
+
+.fade {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 1s ease var(--d, 0.25s),
+    transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0.25s);
+}
+
+.panel.in .fade { opacity: 1; transform: none; }
+
+/* framed photographs — portraits, the family, the table */
+
+.figure-card {
+  position: absolute;
+  right: clamp(24px, 7vw, 110px);
+  top: 50%;
+  translate: 0 -50%;
+  rotate: 1.6deg;
+  width: clamp(200px, 23vw, 340px);
+  padding: 10px 10px 14px;
+  background: color-mix(in srgb, var(--ink) 96%, transparent);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  z-index: 2;
+}
+
+.figure-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.figure-card figcaption {
+  margin-top: 12px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: color-mix(in srgb, var(--bg) 82%, black);
+}
+
+/* the founder's portrait hangs straight, in a gold-edged mat,
+   and is never cropped */
+.figure-card--portrait {
+  rotate: 0deg;
+  width: clamp(230px, 24vw, 350px);
+  padding: 14px 14px 18px;
+  border: 4px double color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.figure-card--portrait img {
+  border: 1px solid color-mix(in srgb, var(--bg) 35%, black);
+  object-fit: contain !important;
+}
+
+/* hero scroll cue */
+
+.cue {
+  position: absolute;
+  bottom: 5vh;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.cue::after {
+  content: "";
+  width: 1px;
+  height: 58px;
+  background: linear-gradient(var(--accent), transparent);
+  animation: cueDrop 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transform-origin: top;
+}
+
+@keyframes cueDrop {
+  0%   { transform: scaleY(0); }
+  45%  { transform: scaleY(1); }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+/* ── the four jewels ────────────────────────── */
+
+.room .panel {
+  flex-direction: row;
+  align-items: center;
+  align-content: center;
+  justify-content: space-between;
+  gap: 5vh 6vw;
+  flex-wrap: wrap;
+}
+
+.room--alt .panel { flex-direction: row-reverse; }
+
+.room .display { font-size: clamp(2.9rem, 11vw, 10.5rem); margin-bottom: 0; }
+.room .room-copy { max-width: 27em; }
+
+.roman {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 2.5vh;
+}
+
+/* ── finale ─────────────────────────────────── */
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 6vh;
+}
+
+.btn {
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 1.15em 2.1em;
+  border: 1px solid color-mix(in srgb, var(--ink) 42%, transparent);
+  border-radius: 99px;
+  transition: background 0.45s ease, color 0.45s ease, border-color 0.45s ease;
+}
+
+.btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1206;
+}
+
+.btn--ghost { border-style: dashed; }
+
+.addr {
+  margin-top: 5.5vh;
+  font-size: 13px;
+  line-height: 1.9;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
+}
+
+footer {
+  position: relative;
+  z-index: 1;
+  padding: 9vh 24px 7vh;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
+}
+
+.foot-sub { margin-top: 1.4em; opacity: 0.6; }
+
+/* ── small screens ──────────────────────────── */
+
+@media (max-width: 980px) {
+  .figure-card {
+    position: static;
+    translate: none;
+    margin-top: 3vh;
+    width: min(34vw, 250px);
+  }
+  .figure-card img {
+    max-height: 22vh;
+    object-fit: cover;
+  }
+  .figure-card--portrait { width: min(40vw, 260px); }
+  .figure-card--portrait img { max-height: 34vh; }
+
+  /* chapters that carry a framed photo need headroom, not centering */
+  .panel:has(.figure-card) {
+    justify-content: flex-start;
+    padding-top: 12vh;
+  }
+  .panel:has(.figure-card) .label { margin-bottom: 3vh; }
+  .panel:has(.figure-card) .display { margin-bottom: 3.5vh; font-size: clamp(3rem, 11vw, 7rem); }
+  .panel:has(.figure-card) .emline { margin-top: 3vh; font-size: clamp(1.2rem, 2vw, 1.6rem); }
+}
+
+@media (max-width: 760px) {
+  .room .panel {
+    flex-direction: column !important;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4vh;
+  }
+  .display { line-height: 0.92; }
+  .cue { display: none; }
+  .progress { width: 1.5px; }
+  .panel::before {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 58%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 42%, transparent) 100%
+    ) !important;
+  }
+  .figure-card { margin-top: 3vh; width: min(48vw, 200px); }
+  .figure-card img { max-height: 18vh; }
+  .figure-card--portrait { width: min(46vw, 190px); }
+  .figure-card--portrait img { max-height: 24vh; }
+  .lede { font-size: 0.95rem; line-height: 1.65; }
+  .panel:has(.figure-card) .display { font-size: clamp(3rem, 13vw, 5rem); }
+  .panel:has(.figure-card) .emline { font-size: 1.2rem; }
+}
+
+/* ── reduced motion ─────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .grain { animation: none; }
+  .cue::after { animation: none; transform: scaleY(1); }
+  .display .ch,
+  .fade {
+    transition-duration: 0.01s;
+    transition-delay: 0s;
+  }
+}
