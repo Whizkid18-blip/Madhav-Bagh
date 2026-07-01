@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Security: only this site's own code runs; no third-party scripts, no framing tricks -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Madhav Bagh — Royal Heritage Stay · Vadodara · Est. 1892</title>
   <meta name="description" content="A royal Indo-Saracenic mansion in Vadodara that never stopped being a home. Built in 1892 by Shrimant Madhavrao Gaekwad, kept alive today by his family — Stella will find you first." />
   <meta property="og:title" content="Madhav Bagh — Royal Heritage Stay" />
@@ -205,7 +208,7 @@
         <div class="cta-row fade" style="--d:.6s">
           <a class="btn" href="tel:+917016370801">Call · +91 70163 70801</a>
           <a class="btn" href="mailto:madhavbaghbaroda@gmail.com">Write to the Family</a>
-          <a class="btn btn--ghost" href="https://maps.google.com/?q=Madhav+Bagh+Royal+Heritage+Stay+Vadodara" target="_blank" rel="noopener">Find the Gates</a>
+          <a class="btn btn--ghost" href="https://maps.google.com/?q=Madhav+Bagh+Royal+Heritage+Stay+Vadodara" target="_blank" rel="noopener noreferrer">Find the Gates</a>
         </div>
         <p class="addr fade" style="--d:.8s">Opposite O.N.G.C. Main Gate, Makarpura Road,<br />Vadodara, Gujarat 390009 — India</p>
       </div>
@@ -218,9 +221,6 @@
     <p class="foot-sub">The Gaekwad family · Vadodara, Gujarat</p>
   </footer>
 
-  <script type="importmap">
-    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
-  </script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -1,9 +1,0 @@
-# Madhav Bagh — Royal Heritage Stay (static site)
-# Replit runs this to serve the site. Press "Run", then share the webview URL.
-entrypoint = "index.html"
-modules = ["python-3.11"]
-run = "python3 -m http.server 3000"
-
-[[ports]]
-localPort = 3000
-externalPort = 80

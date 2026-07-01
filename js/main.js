@@ -5,7 +5,7 @@
    fireflies waiting at the end of it.
    ───────────────────────────────────────────── */
 
-import * as THREE from "three";
+import * as THREE from "./vendor/three.module.js";
 
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const lerp = (a, b, t) => a + (b - a) * t;
