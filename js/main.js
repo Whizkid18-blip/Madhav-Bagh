@@ -29,7 +29,7 @@ const P = (bg, ink, accent, tint, photo) => ({
 const PALETTES = {
   hero:      P("#0e0b1f", "#f2ecdc", "#d9a441", 0.50, "hero"),
   dawn:      P("#2c1014", "#f5e9d7", "#e2a43e", 0.48, "facade-red"),
-  courtyard: P("#efe5cf", "#38231a", "#8a3210", 0.26, "courtyard"),
+  courtyard: P("#f2e9d6", "#2a1810", "#8a3210", 0.42, "courtyard"),
   family:    P("#382214", "#f6ead2", "#e8b54a", 0.46, "veranda"),
   stella:    P("#7c4e16", "#fff3da", "#ffd479", 0.42, "stella"),
   rasoi:     P("#29101e", "#f3e3d3", "#d98e4a", 0.46, "dinner-lanterns"),
@@ -317,7 +317,7 @@ function smoothTo(target) {
   if (Math.abs(dist) < 2) return;
   const dur = Math.min(1500, 420 + Math.abs(dist) * 0.32);
   const t0 = performance.now();
-  const ease = (x) => 1 - Math.pow(1 - x, 3); /* easeOutCubic */
+  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2); /* easeInOutCubic */
   function step(now) {
     const k = Math.min(1, (now - t0) / dur);
     scrollTo(0, startY + dist * ease(k));
@@ -330,6 +330,23 @@ function smoothTo(target) {
 ["wheel", "touchstart", "keydown"].forEach((ev) =>
   addEventListener(ev, cancelScrollAnim, { passive: true })
 );
+
+/* gentle inertia for classic notched mouse wheels (the steppy ones).
+   Trackpads (pixel-precise), touch, and keyboard are left completely native. */
+let wheelTarget = scrollY;
+let wheelActive = false;
+if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
+  addEventListener("scroll", () => { if (!wheelActive) wheelTarget = scrollY; }, { passive: true });
+  addEventListener("keydown", () => { wheelActive = false; }, { passive: true });
+  addEventListener("touchstart", () => { wheelActive = false; }, { passive: true });
+  addEventListener("wheel", (e) => {
+    if (e.ctrlKey || e.deltaMode === 0) return; /* pinch-zoom or trackpad → native */
+    e.preventDefault();
+    const max = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+    wheelTarget = Math.max(0, Math.min(max, wheelTarget + e.deltaY * 16));
+    wheelActive = true;
+  }, { passive: false });
+}
 
 /* in-page anchor links glide instead of jumping */
 document.addEventListener("click", (e) => {
@@ -395,6 +412,13 @@ const clock = new THREE.Clock();
 
 function frame() {
   requestAnimationFrame(frame);
+
+  /* ease the page toward the mouse-wheel target (native scroll otherwise) */
+  if (wheelActive) {
+    if (Math.abs(wheelTarget - scrollY) < 0.6) { scrollTo(0, wheelTarget); wheelActive = false; }
+    else scrollTo(0, scrollY + (wheelTarget - scrollY) * 0.2);
+  }
+
   const t = clock.getElapsedTime();
 
   scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : 0.14);
