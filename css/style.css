@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────
-   MADHAV BAGH — Royal Heritage Stay · Est. 1892
+   MADHAV BAGH · Royal Heritage Stay · Est. 1892
    A scroll-journey through a living mansion.
    ───────────────────────────────────────────── */
 
@@ -56,7 +56,7 @@ body.no-webgl {
   will-change: opacity, transform;
 }
 
-/* Stella's portrait is vertical — keep her head in frame when it fills the screen */
+/* Stella's portrait is vertical, keep her head in frame when it fills the screen */
 .photo--stella { object-position: 50% 32%; }
 
 /* the day-cycle palette grades every photograph */
@@ -352,7 +352,7 @@ main { position: relative; z-index: 3; }
 
 /* body copy */
 
-/* no boxes — a soft halo of the chapter's own sky keeps
+/* no boxes, a soft halo of the chapter's own sky keeps
    every word legible over any photograph, light or dark */
 .display,
 .label,
@@ -407,7 +407,7 @@ main { position: relative; z-index: 3; }
 
 .panel.in .fade { opacity: 1; transform: none; }
 
-/* framed photographs — portraits, the family, the table */
+/* framed photographs: portraits, the family, the table */
 
 .figure-card {
   position: absolute;

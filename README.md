@@ -1,39 +1,38 @@
-# Madhav Bagh — Royal Heritage Stay
+# Madhav Bagh, Royal Heritage Stay
 
-A cinematic, scroll-driven website for **Madhav Bagh**, a royal Indo-Saracenic
-heritage homestay in Vadodara, Gujarat (est. 1892). It is a single continuous
-experience: real photographs of the mansion crossfade behind oversized
-typography as you scroll, with a WebGL layer of light, dust, and fireflies
-that shifts through a full day.
+Website for Madhav Bagh, a royal heritage homestay in a 1892 Indo-Saracenic
+mansion in Vadodara, Gujarat. It is a single scrolling page. Real photographs
+of the house fade from one to the next as you move down, lit by a WebGL layer
+of dust and fireflies that shifts through a day.
 
-## Tech
+## How it is built
 
-- **Static site** — HTML, CSS, and vanilla JavaScript. No build step, no
-  backend, no database, no third-party scripts.
-- **WebGL** via a self-hosted copy of three.js (`js/vendor/`), so the page
-  depends on no external code.
-- A strict **Content-Security-Policy** limits execution to the site's own
-  origin.
+- A static site: HTML, CSS, and plain JavaScript. No build step, no backend,
+  no database, no third-party scripts.
+- three.js is included locally (`js/vendor/`), so the page loads no code from
+  anyone else.
+- A Content-Security-Policy limits everything to the site's own files.
 
-## Run locally
+## Running it locally
 
-ES modules need to be served over `http://` (not opened as a `file://`):
+The page uses JavaScript modules, so it needs to be served over http, not
+opened as a file:
 
 ```
 python -m http.server 8080
 ```
 
-Then open the printed URL.
+Then open the address it prints.
 
-## Deploy
+## Hosting
 
-Fully static — host it on GitHub Pages, Netlify, Vercel, or any static host.
-No configuration required.
+It is a plain static site, so it runs on GitHub Pages, Netlify, Vercel, or any
+ordinary web host. Nothing to configure.
 
 ## Contact
 
-**Madhav Bagh — Royal Heritage Stay**
+Madhav Bagh, Royal Heritage Stay
 Opposite O.N.G.C. Main Gate, Makarpura Road, Vadodara, Gujarat 390009
 +91 70163 70801 · madhavbaghbaroda@gmail.com
 
-Photographs © Madhav Bagh / the Gaekwad family.
+Photographs belong to Madhav Bagh and the Gaekwad family.

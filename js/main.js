@@ -1,8 +1,8 @@
 /* ─────────────────────────────────────────────
-   MADHAV BAGH — the journey through the arches
-   A WebGL ecosystem: an endless Indo-Saracenic
-   corridor, a day that passes as you walk, and
-   fireflies waiting at the end of it.
+   MADHAV BAGH
+   Real photographs of the mansion crossfade as
+   you scroll, graded through a full day, with a
+   WebGL layer of dust, embers and fireflies.
    ───────────────────────────────────────────── */
 
 import * as THREE from "./vendor/three.module.js";
@@ -57,7 +57,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 1600);
 camera.position.set(0, 4.7, 14);
 
-/* ── the walk — camera path through the particle field ── */
+/* ── the walk, camera path through the particle field ── */
 
 const CAM_START = 14;
 const CAM_END = -510;
@@ -184,7 +184,7 @@ const live = {
   tint: 0.45,
 };
 
-/* the rooms of the palace — one photograph per chapter */
+/* the rooms of the palace, one photograph per chapter */
 const photoEls = {};
 $$(".photo").forEach((el) => (photoEls[el.dataset.photo] = el));
 const photoOpacity = {};
@@ -439,7 +439,7 @@ function frame() {
   applyPhotos(t);
   updateNav();
 
-  /* big words drift slower than the world — depth */
+  /* big words drift slower than the world, for depth */
   if (!reduced) {
     for (const it of parallaxItems) {
       const prog = clamp01((scrollCur + vh - it.top) / (it.h + vh));
@@ -449,7 +449,7 @@ function frame() {
 
   if (!renderer) return;
 
-  /* world state — the canvas stays transparent; photos live behind it */
+  /* world state: the canvas stays transparent; photos live behind it */
   dust.material.uniforms.uTime.value = t;
   dust.material.uniforms.uColor.value.copy(live.accent);
   stars.material.uniforms.uTime.value = t;
