@@ -48,6 +48,12 @@ let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setClearColor(0x000000, 0); /* the photographs show through */
+  /* if the phone's GPU drops the context under pressure, bow out quietly:
+     the photographs carry the page on their own */
+  canvas.addEventListener("webglcontextlost", (e) => {
+    e.preventDefault();
+    canvas.style.display = "none";
+  });
 } catch (e) {
   document.body.classList.add("no-webgl");
 }
@@ -137,13 +143,13 @@ function makePoints(count, span, sizeMin, sizeMax, amp, fadeNear, fadeFar, color
 }
 
 const dust = makePoints(
-  mobile ? 380 : 900,
+  mobile ? 260 : 900,
   { x: [-22, 22], y: [0.5, 17], z: [22, CAM_END - 130] },
   0.5, 1.8, 1.4, 26, 150, "#d9a441"
 );
 
 const stars = makePoints(
-  mobile ? 350 : 700,
+  mobile ? 240 : 700,
   { x: [-450, 450], y: [15, 320], z: [CAM_END - 480, CAM_END + 60] },
   0.7, 1.7, 0.15, 220, 1300, "#ffe9c4"
 );
@@ -285,8 +291,26 @@ const rootStyle = document.documentElement.style;
 
 /* ── input ───────────────────────────────── */
 
-/* the journey always begins at the gates */
+/* the journey begins at the gates on a fresh visit, but an unexpected
+   reload (tab crash, pull-to-refresh, back button) resumes where you were */
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
+let saveTimer = null;
+addEventListener("scroll", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { sessionStorage.setItem("mb-y", String(Math.round(scrollY))); } catch (e) {}
+  }, 200);
+}, { passive: true });
+
+function resumePosition() {
+  let savedY = NaN;
+  try { savedY = parseInt(sessionStorage.getItem("mb-y") || "", 10); } catch (e) {}
+  const nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+  const freshVisit = nav ? nav.type === "navigate" : true;
+  if (!freshVisit && Number.isFinite(savedY) && savedY > vh * 0.5) return savedY;
+  return 0;
+}
 
 let scrollTarget = scrollY;
 let scrollCur = scrollY;
@@ -307,7 +331,7 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   /* the canvas only draws soft particles; phones don't need full retina for it */
-  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.25 : 2));
 });
 
 /* ── smooth in-page navigation (eased, cancellable) ── */
@@ -525,12 +549,12 @@ function frame() {
 /* ── ignition ────────────────────────────── */
 
 function start() {
-  if (!location.hash) scrollTo({ top: 0, behavior: "instant" });
-  scrollTarget = scrollCur = scrollY;
   measure();
+  if (!location.hash) scrollTo({ top: resumePosition(), behavior: "instant" });
+  scrollTarget = scrollCur = scrollY;
   if (renderer) {
     renderer.setSize(innerWidth, innerHeight);
-    const px = Math.min(devicePixelRatio, mobile ? 1.5 : 2);
+    const px = Math.min(devicePixelRatio, mobile ? 1.25 : 2);
     renderer.setPixelRatio(px);
     dust.material.uniforms.uPx.value = px;
     stars.material.uniforms.uPx.value = px;
