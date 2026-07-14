@@ -17,6 +17,8 @@
 html {
   /* JS drives the eased nav jumps; keep native scroll instant so they don't fight */
   scroll-behavior: auto;
+  /* stop pull-to-refresh and rubber-band overscroll from reloading the page */
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -52,8 +54,8 @@ body.no-webgl {
   height: 100%;
   object-fit: cover;
   opacity: 0;
+  visibility: hidden; /* fully faded-out photos release their GPU layer */
   transform: scale(1.08);
-  will-change: opacity, transform;
 }
 
 /* Stella's portrait is vertical, keep her head in frame when it fills the screen */

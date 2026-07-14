@@ -218,6 +218,9 @@ function applyPhotos(time) {
     const prev = parseFloat(el.style.opacity || 0);
     if (op === 0 && prev === 0) continue;
     el.style.opacity = op.toFixed(3);
+    /* only photos actually on screen keep a compositor layer; the rest
+       are hidden entirely so phones don't run out of GPU memory */
+    el.style.visibility = op === 0 ? "hidden" : "visible";
     /* slow breath + a pull of depth as a room recedes */
     const scale = 1.06 + (1 - op) * 0.06 + Math.sin(time * 0.05) * 0.004;
     const rise = (1 - op) * 1.6;
@@ -295,7 +298,8 @@ addEventListener("resize", () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  /* the canvas only draws soft particles; phones don't need full retina for it */
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2));
 });
 
 /* ── smooth in-page navigation (eased, cancellable) ── */
@@ -477,7 +481,7 @@ function start() {
   measure();
   if (renderer) {
     renderer.setSize(innerWidth, innerHeight);
-    const px = Math.min(devicePixelRatio, 2);
+    const px = Math.min(devicePixelRatio, mobile ? 1.5 : 2);
     renderer.setPixelRatio(px);
     dust.material.uniforms.uPx.value = px;
     stars.material.uniforms.uPx.value = px;
