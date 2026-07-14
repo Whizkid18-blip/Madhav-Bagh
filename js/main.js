@@ -155,6 +155,7 @@ let stops = [];
 let vh = innerHeight;
 let scrollMax = 1;
 let parallaxItems = [];
+let snapPoints = []; /* each chapter's ideal, fully-framed scroll position */
 
 function measure() {
   vh = innerHeight;
@@ -175,6 +176,13 @@ function measure() {
     const sec = el.closest(".chapter");
     return { el, top: sec.offsetTop, h: sec.offsetHeight };
   });
+
+  /* the gates, then the middle of each chapter's sticky dwell */
+  snapPoints = [0].concat(
+    $$(".chapter").map((el) =>
+      Math.round(el.offsetTop + Math.max(0, el.offsetHeight - vh) * 0.5)
+    )
+  );
 }
 
 const live = {
@@ -309,17 +317,15 @@ function cancelScrollAnim() {
   if (scrollAnim) { cancelAnimationFrame(scrollAnim); scrollAnim = null; }
 }
 
-function smoothTo(target) {
-  const el = typeof target === "string" ? document.querySelector(target) : target;
-  if (!el) return;
+function tweenTo(dest, durOverride) {
   const max = document.documentElement.scrollHeight - innerHeight;
-  const dest = Math.max(0, Math.min(el.offsetTop, max));
+  dest = Math.max(0, Math.min(dest, max));
   if (reduced) { scrollTo(0, dest); return; }
   cancelScrollAnim();
   const startY = scrollY;
   const dist = dest - startY;
   if (Math.abs(dist) < 2) return;
-  const dur = Math.min(1500, 420 + Math.abs(dist) * 0.32);
+  const dur = durOverride || Math.min(1500, 420 + Math.abs(dist) * 0.32);
   const t0 = performance.now();
   const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2); /* easeInOutCubic */
   function step(now) {
@@ -328,6 +334,17 @@ function smoothTo(target) {
     scrollAnim = k < 1 ? requestAnimationFrame(step) : null;
   }
   scrollAnim = requestAnimationFrame(step);
+}
+
+function smoothTo(target) {
+  const el = typeof target === "string" ? document.querySelector(target) : target;
+  if (!el) return;
+  let dest = el.offsetTop;
+  /* land chapters on their ideal frame, not their raw top edge */
+  if (el.classList && el.classList.contains("chapter")) {
+    dest += Math.max(0, el.offsetHeight - vh) * 0.5;
+  }
+  tweenTo(dest);
 }
 
 /* hand control back the instant the visitor scrolls themselves */
@@ -350,6 +367,49 @@ if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
     wheelTarget = Math.max(0, Math.min(max, wheelTarget + e.deltaY * 16));
     wheelActive = true;
   }, { passive: false });
+}
+
+/* ── settle: when scrolling stops, glide onto the chapter's ideal frame ──
+   Direction-aware so it assists forward and never yanks the visitor back:
+   it completes the move toward the next chapter, and only corrects small
+   backward slips. Skips the footer and respects reduced motion. */
+
+let settleTimer = null;
+let settlePrevY = scrollY;
+let travelDir = 1;
+
+addEventListener("scroll", () => {
+  const y = scrollY;
+  if (Math.abs(y - settlePrevY) > 1) travelDir = y > settlePrevY ? 1 : -1;
+  settlePrevY = y;
+  if (reduced) return;
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(trySettle, 240);
+}, { passive: true });
+
+function trySettle() {
+  if (scrollAnim || wheelActive || snapPoints.length < 2) return;
+  const y = scrollY;
+  const maxY = document.documentElement.scrollHeight - innerHeight;
+  /* leave the visitor alone at the footer and at the very end */
+  if (y > snapPoints[snapPoints.length - 1] + vh * 0.3 || y >= maxY - 4) return;
+
+  let ahead = null, behind = null;
+  for (const p of snapPoints) {
+    const d = p - y;
+    const inDirection = travelDir >= 0 ? d >= -4 : d <= 4;
+    if (inDirection) {
+      if (ahead === null || Math.abs(d) < Math.abs(ahead)) ahead = d;
+    } else if (behind === null || Math.abs(d) < Math.abs(behind)) {
+      behind = d;
+    }
+  }
+
+  let delta = null;
+  if (ahead !== null && Math.abs(ahead) <= vh * 0.9) delta = ahead;
+  else if (behind !== null && Math.abs(behind) <= vh * 0.15) delta = behind;
+  if (delta === null || Math.abs(delta) < 6) return;
+  tweenTo(y + delta, 700);
 }
 
 /* in-page anchor links glide instead of jumping */
@@ -420,7 +480,7 @@ function frame() {
   /* ease the page toward the mouse-wheel target (native scroll otherwise) */
   if (wheelActive) {
     if (Math.abs(wheelTarget - scrollY) < 0.6) { scrollTo(0, wheelTarget); wheelActive = false; }
-    else scrollTo(0, scrollY + (wheelTarget - scrollY) * 0.2);
+    else scrollTo(0, scrollY + (wheelTarget - scrollY) * 0.16);
   }
 
   const t = clock.getElapsedTime();
