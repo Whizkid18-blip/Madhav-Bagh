@@ -369,19 +369,15 @@ if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
   }, { passive: false });
 }
 
-/* ── settle: when scrolling stops, glide onto the chapter's ideal frame ──
-   Direction-aware so it assists forward and never yanks the visitor back:
-   it completes the move toward the next chapter, and only corrects small
-   backward slips. Skips the footer and respects reduced motion. */
+/* ── settle: when scrolling stops, glide to the middle of the chapter ──
+   Nearest chapter middle always wins, so the page ends every scroll on a
+   fully framed, maximally readable view. Because "nearest" can only be one
+   of the two adjacent chapters, no chapter is ever skipped. Skips the
+   footer zone and respects reduced motion. */
 
 let settleTimer = null;
-let settlePrevY = scrollY;
-let travelDir = 1;
 
 addEventListener("scroll", () => {
-  const y = scrollY;
-  if (Math.abs(y - settlePrevY) > 1) travelDir = y > settlePrevY ? 1 : -1;
-  settlePrevY = y;
   if (reduced) return;
   clearTimeout(settleTimer);
   settleTimer = setTimeout(trySettle, 240);
@@ -394,22 +390,15 @@ function trySettle() {
   /* leave the visitor alone at the footer and at the very end */
   if (y > snapPoints[snapPoints.length - 1] + vh * 0.3 || y >= maxY - 4) return;
 
-  let ahead = null, behind = null;
+  let best = null;
   for (const p of snapPoints) {
-    const d = p - y;
-    const inDirection = travelDir >= 0 ? d >= -4 : d <= 4;
-    if (inDirection) {
-      if (ahead === null || Math.abs(d) < Math.abs(ahead)) ahead = d;
-    } else if (behind === null || Math.abs(d) < Math.abs(behind)) {
-      behind = d;
-    }
+    if (best === null || Math.abs(p - y) < Math.abs(best - y)) best = p;
   }
+  if (best === null || Math.abs(best - y) < 6) return;
 
-  let delta = null;
-  if (ahead !== null && Math.abs(ahead) <= vh * 0.9) delta = ahead;
-  else if (behind !== null && Math.abs(behind) <= vh * 0.15) delta = behind;
-  if (delta === null || Math.abs(delta) < 6) return;
-  tweenTo(y + delta, 700);
+  /* longer glides for longer distances, so the landing always feels calm */
+  const dist = Math.abs(best - y);
+  tweenTo(best, Math.min(1100, 480 + dist * 0.35));
 }
 
 /* in-page anchor links glide instead of jumping */
