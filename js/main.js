@@ -357,99 +357,19 @@ addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.25 : 2));
 });
 
-/* ── smooth in-page navigation (eased, cancellable) ── */
-
-let scrollAnim = null;
-function cancelScrollAnim() {
-  if (scrollAnim) { cancelAnimationFrame(scrollAnim); scrollAnim = null; }
-}
-
-function tweenTo(dest, durOverride) {
-  const max = document.documentElement.scrollHeight - innerHeight;
-  dest = Math.max(0, Math.min(dest, max));
-  if (reduced) { scrollTo(0, dest); return; }
-  cancelScrollAnim();
-  const startY = scrollY;
-  const dist = dest - startY;
-  if (Math.abs(dist) < 2) return;
-  const dur = durOverride || Math.min(1500, 420 + Math.abs(dist) * 0.32);
-  const t0 = performance.now();
-  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2); /* easeInOutCubic */
-  function step(now) {
-    const k = Math.min(1, (now - t0) / dur);
-    scrollTo(0, startY + dist * ease(k));
-    scrollAnim = k < 1 ? requestAnimationFrame(step) : null;
-  }
-  scrollAnim = requestAnimationFrame(step);
-}
+/* ── scrolling: 100% the browser's, nothing else's ──
+   Not one line of JavaScript moves the scroll position while the visitor
+   is on the page (the only scrollTo left in this file is the position
+   restore on load). Coming to rest on a chapter's framed view is done by
+   native CSS scroll-snap (proximity) in style.css; smooth anchor and nav
+   jumps use the browser's own scrollIntoView. Native physics cannot
+   stutter, oscillate, or fight input. */
 
 function smoothTo(target) {
   const el = typeof target === "string" ? document.querySelector(target) : target;
   if (!el) return;
-  let dest = el.offsetTop;
-  /* land chapters on their ideal frame, not their raw top edge */
-  if (el.classList && el.classList.contains("chapter")) {
-    dest += Math.max(0, el.offsetHeight - vh) * 0.5;
-  }
-  tweenTo(dest);
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
-
-/* hand control back the instant the visitor scrolls themselves */
-["wheel", "touchstart", "keydown"].forEach((ev) =>
-  addEventListener(ev, cancelScrollAnim, { passive: true })
-);
-
-/* Scrolling itself is 100% native: no wheel hijacking, ever. Hijacking
-   only some wheel events makes the glide fight the browser and stutter.
-   The cinematic softness lives purely in the visual layer (the world
-   follows the scroll with a short lag), which cannot fight the input.
-
-   The one interference we do want: after scrolling fully stops, drift
-   gently onto the nearest chapter's fully-framed view, so the page never
-   rests on a half-and-half split between two panels. Any input cancels
-   it instantly. */
-
-let settleTimer = null;
-
-addEventListener("scroll", () => {
-  if (reduced) return;
-  clearTimeout(settleTimer);
-  settleTimer = setTimeout(trySettle, 300);
-}, { passive: true });
-
-function trySettle() {
-  if (scrollAnim || reduced) return;
-  const y = scrollY;
-  const maxY = document.documentElement.scrollHeight - innerHeight;
-  const chapters = $$(".chapter");
-  if (!chapters.length) return;
-
-  /* candidate resting points: the gates, then each chapter's dwell middle */
-  let best = 0;
-  for (const el of chapters) {
-    const mid = el.offsetTop + Math.max(0, el.offsetHeight - vh) * 0.5;
-    if (Math.abs(mid - y) < Math.abs(best - y)) best = mid;
-  }
-
-  /* leave the visitor alone at the footer and the very end */
-  const lastMid = chapters[chapters.length - 1];
-  if (y > lastMid.offsetTop + Math.max(0, lastMid.offsetHeight - vh) * 0.5 + vh * 0.3) return;
-  if (y >= maxY - 4) return;
-
-  const dist = Math.abs(best - y);
-  if (dist < 8) return;
-  tweenTo(best, Math.min(900, 420 + dist * 0.3));
-}
-
-/* in-page anchor links glide instead of jumping */
-document.addEventListener("click", (e) => {
-  const a = e.target.closest('a[href^="#"]');
-  if (!a) return;
-  const href = a.getAttribute("href");
-  if (href.length < 2 || !document.querySelector(href)) return;
-  e.preventDefault();
-  smoothTo(href);
-});
 
 /* ── chapter navigation rail ──────────────── */
 

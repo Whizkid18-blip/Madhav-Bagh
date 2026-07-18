@@ -17,8 +17,11 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  /* JS drives the eased nav jumps; keep native scroll instant so they don't fight */
-  scroll-behavior: auto;
+  /* all scrolling is native: smooth anchor jumps, and gentle snap so the
+     page comes to rest on a chapter's framed view. proximity (not
+     mandatory) means free scrolling is never restricted mid-section */
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
   /* stop pull-to-refresh and rubber-band overscroll from reloading the page */
   overscroll-behavior-y: none;
 }
@@ -278,8 +281,9 @@ header {
 main { position: relative; z-index: 3; }
 
 /* pacing: enough dwell that a stopped page always shows a full panel,
-   short enough that the walk keeps moving */
-.chapter { height: 172vh; position: relative; }
+   short enough that the walk keeps moving. Each chapter top is a native
+   snap point: stopping near one eases the panel perfectly into frame */
+.chapter { height: 172vh; position: relative; scroll-snap-align: start; }
 .chapter.hero { height: 120vh; }
 .chapter.room { height: 148vh; }
 .chapter.finale { height: 158vh; }
