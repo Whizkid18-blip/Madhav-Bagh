@@ -217,13 +217,22 @@ function samplePalette(p) {
   live.accent.lerpColors(a.pal.accent, b.pal.accent, t);
   live.tint = lerp(a.pal.tint, b.pal.tint, t);
 
-  /* crossfade the photographs of the two surrounding chapters */
+  /* crossfade the photographs of the two surrounding chapters.
+     The swap happens decisively across the middle of the transition
+     instead of dragging over the whole scroll distance */
   for (const k in photoOpacity) photoOpacity[k] = 0;
   if (a.pal.photo === b.pal.photo) {
     photoOpacity[a.pal.photo] = 1;
   } else {
-    photoOpacity[a.pal.photo] = 1 - t;
-    photoOpacity[b.pal.photo] = t;
+    const pt = smoothstep(clamp01((t - 0.28) / 0.44));
+    photoOpacity[a.pal.photo] = 1 - pt;
+    photoOpacity[b.pal.photo] = pt;
+    /* warm the incoming photo early so its decode never lands mid-fade */
+    const nb = photoEls[b.pal.photo];
+    if (nb && !nb.__warm && t > 0.04) {
+      nb.__warm = true;
+      if (nb.decode) nb.decode().catch(() => {});
+    }
   }
 }
 
@@ -234,9 +243,16 @@ function applyPhotos(time) {
     const prev = parseFloat(el.style.opacity || 0);
     if (op === 0 && prev === 0) continue;
     el.style.opacity = op.toFixed(3);
-    /* only photos actually on screen keep a compositor layer; the rest
-       are hidden entirely so phones don't run out of GPU memory */
-    el.style.visibility = op === 0 ? "hidden" : "visible";
+    /* promote only the photos actually on screen to their own GPU layer
+       (smooth fades); hide and demote the rest (no phone memory blowout) */
+    if (op === 0) {
+      el.style.visibility = "hidden";
+      el.style.willChange = "auto";
+      el.__warm = false;
+    } else if (prev === 0) {
+      el.style.visibility = "visible";
+      el.style.willChange = "opacity, transform";
+    }
     /* slow breath + a pull of depth as a room recedes */
     const scale = 1.06 + (1 - op) * 0.06 + Math.sin(time * 0.05) * 0.004;
     const rise = (1 - op) * 1.6;
