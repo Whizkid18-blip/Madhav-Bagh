@@ -399,32 +399,47 @@ function smoothTo(target) {
   addEventListener(ev, cancelScrollAnim, { passive: true })
 );
 
-/* gentle inertia for classic notched mouse wheels (the steppy ones).
-   Trackpads (pixel-precise), touch, and keyboard are left completely native. */
-let wheelTarget = scrollY;
-let wheelActive = false;
-if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
-  addEventListener("scroll", () => { if (!wheelActive) wheelTarget = scrollY; }, { passive: true });
-  addEventListener("keydown", () => { wheelActive = false; }, { passive: true });
-  addEventListener("touchstart", () => { wheelActive = false; }, { passive: true });
-  addEventListener("wheel", (e) => {
-    if (e.ctrlKey) return; /* pinch-zoom stays native */
-    /* notched mouse wheels: line-mode (Firefox) or large integer pixel
-       deltas (Chrome/Edge on Windows). Precision trackpads send small
-       fractional deltas and are already smooth, so they stay native. */
-    const lines = e.deltaMode === 1;
-    const notched = lines || (Math.abs(e.deltaY) >= 80 && Number.isInteger(e.deltaY));
-    if (!notched) return;
-    e.preventDefault();
-    const max = Math.max(0, document.documentElement.scrollHeight - innerHeight);
-    wheelTarget = Math.max(0, Math.min(max, wheelTarget + (lines ? e.deltaY * 16 : e.deltaY)));
-    wheelActive = true;
-  }, { passive: false });
-}
+/* Scrolling itself is 100% native: no wheel hijacking, ever. Hijacking
+   only some wheel events makes the glide fight the browser and stutter.
+   The cinematic softness lives purely in the visual layer (the world
+   follows the scroll with a short lag), which cannot fight the input.
 
-/* Scrolling is always the visitor's own: no auto-settle, no snapping.
-   The nav dots still land each chapter on its ideal frame when clicked,
-   but free scrolling is never interfered with. */
+   The one interference we do want: after scrolling fully stops, drift
+   gently onto the nearest chapter's fully-framed view, so the page never
+   rests on a half-and-half split between two panels. Any input cancels
+   it instantly. */
+
+let settleTimer = null;
+
+addEventListener("scroll", () => {
+  if (reduced) return;
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(trySettle, 300);
+}, { passive: true });
+
+function trySettle() {
+  if (scrollAnim || reduced) return;
+  const y = scrollY;
+  const maxY = document.documentElement.scrollHeight - innerHeight;
+  const chapters = $$(".chapter");
+  if (!chapters.length) return;
+
+  /* candidate resting points: the gates, then each chapter's dwell middle */
+  let best = 0;
+  for (const el of chapters) {
+    const mid = el.offsetTop + Math.max(0, el.offsetHeight - vh) * 0.5;
+    if (Math.abs(mid - y) < Math.abs(best - y)) best = mid;
+  }
+
+  /* leave the visitor alone at the footer and the very end */
+  const lastMid = chapters[chapters.length - 1];
+  if (y > lastMid.offsetTop + Math.max(0, lastMid.offsetHeight - vh) * 0.5 + vh * 0.3) return;
+  if (y >= maxY - 4) return;
+
+  const dist = Math.abs(best - y);
+  if (dist < 8) return;
+  tweenTo(best, Math.min(900, 420 + dist * 0.3));
+}
 
 /* in-page anchor links glide instead of jumping */
 document.addEventListener("click", (e) => {
@@ -505,17 +520,11 @@ function frame(now) {
   const dt = Math.min(0.05, prevFrameTime ? (now - prevFrameTime) / 1000 : 1 / 60);
   prevFrameTime = now;
 
-  /* ease the page toward the mouse-wheel target (native scroll otherwise) */
-  if (wheelActive) {
-    if (Math.abs(wheelTarget - scrollY) < 0.6) { scrollTo(0, wheelTarget); wheelActive = false; }
-    else scrollTo(0, scrollY + (wheelTarget - scrollY) * smooth(11, dt));
-  }
-
   const t = clock.getElapsedTime();
 
-  /* one smoothing stage, not two: while the wheel glide is already
-     smoothing the page, the world tracks it near-directly */
-  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : smooth(wheelActive ? 18 : 10, dt));
+  /* the one and only smoothing stage: the world follows native scroll
+     with a short cinematic lag */
+  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : smooth(10, dt));
   const p = clamp01(scrollCur / scrollMax);
 
   samplePalette(p);

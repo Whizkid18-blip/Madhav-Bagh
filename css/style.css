@@ -277,11 +277,12 @@ header {
 
 main { position: relative; z-index: 3; }
 
-/* brisker pacing: less wading between moments, transitions arrive sooner */
-.chapter { height: 158vh; position: relative; }
-.chapter.hero { height: 118vh; }
-.chapter.room { height: 132vh; }
-.chapter.finale { height: 148vh; }
+/* pacing: enough dwell that a stopped page always shows a full panel,
+   short enough that the walk keeps moving */
+.chapter { height: 172vh; position: relative; }
+.chapter.hero { height: 120vh; }
+.chapter.room { height: 148vh; }
+.chapter.finale { height: 158vh; }
 
 .panel {
   position: sticky;
