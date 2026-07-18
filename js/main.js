@@ -417,37 +417,9 @@ if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
   }, { passive: false });
 }
 
-/* ── settle: when scrolling stops, glide to the middle of the chapter ──
-   Nearest chapter middle always wins, so the page ends every scroll on a
-   fully framed, maximally readable view. Because "nearest" can only be one
-   of the two adjacent chapters, no chapter is ever skipped. Skips the
-   footer zone and respects reduced motion. */
-
-let settleTimer = null;
-
-addEventListener("scroll", () => {
-  if (reduced) return;
-  clearTimeout(settleTimer);
-  settleTimer = setTimeout(trySettle, 240);
-}, { passive: true });
-
-function trySettle() {
-  if (scrollAnim || wheelActive || snapPoints.length < 2) return;
-  const y = scrollY;
-  const maxY = document.documentElement.scrollHeight - innerHeight;
-  /* leave the visitor alone at the footer and at the very end */
-  if (y > snapPoints[snapPoints.length - 1] + vh * 0.3 || y >= maxY - 4) return;
-
-  let best = null;
-  for (const p of snapPoints) {
-    if (best === null || Math.abs(p - y) < Math.abs(best - y)) best = p;
-  }
-  if (best === null || Math.abs(best - y) < 6) return;
-
-  /* longer glides for longer distances, so the landing always feels calm */
-  const dist = Math.abs(best - y);
-  tweenTo(best, Math.min(1100, 480 + dist * 0.35));
-}
+/* Scrolling is always the visitor's own: no auto-settle, no snapping.
+   The nav dots still land each chapter on its ideal frame when clicked
+   (snapPoints feeds smoothTo), but free scrolling is never interfered with. */
 
 /* in-page anchor links glide instead of jumping */
 document.addEventListener("click", (e) => {
