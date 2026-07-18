@@ -161,7 +161,6 @@ let stops = [];
 let vh = innerHeight;
 let scrollMax = 1;
 let parallaxItems = [];
-let snapPoints = []; /* each chapter's ideal, fully-framed scroll position */
 
 function measure() {
   vh = innerHeight;
@@ -183,13 +182,6 @@ function measure() {
     return { el, top: sec.offsetTop, h: sec.offsetHeight };
   });
 
-  /* the gates, then the middle of each chapter's sticky dwell */
-  snapPoints = [0].concat(
-    $$(".chapter").map((el) =>
-      Math.round(el.offsetTop + Math.max(0, el.offsetHeight - vh) * 0.5)
-    )
-  );
-
   if (navTargets.length) refreshNavTops();
 }
 
@@ -200,11 +192,40 @@ const live = {
   tint: 0.45,
 };
 
-/* the rooms of the palace, one photograph per chapter */
+/* ── the photographs: one per chapter, faded as you walk ──
+   Exactly the two photos flanking the current chapter stay mounted on
+   the GPU at all times. The pair only changes when you cross into a new
+   chapter, so layers are never created or destroyed mid-fade — that
+   churn is what causes twitching. Everything else stays hidden and
+   costs nothing. */
+
 const photoEls = {};
 $$(".photo").forEach((el) => (photoEls[el.dataset.photo] = el));
-const photoOpacity = {};
-Object.keys(photoEls).forEach((k) => (photoOpacity[k] = 0));
+
+let pairA = "", pairB = "";
+let fadeA = null, fadeB = null, fadeMix = 0;
+
+function setActivePair(nameA, nameB) {
+  if (nameA === pairA && nameB === pairB) return;
+  pairA = nameA;
+  pairB = nameB;
+  for (const k in photoEls) {
+    const el = photoEls[k];
+    if (k === nameA || k === nameB) {
+      el.style.visibility = "visible";
+      el.style.willChange = "opacity, transform";
+      if (!el.__warm) {
+        el.__warm = true;
+        if (el.decode) el.decode().catch(() => {});
+      }
+    } else {
+      el.style.visibility = "hidden";
+      el.style.willChange = "auto";
+      el.style.opacity = "0";
+      el.__warm = false;
+    }
+  }
+}
 
 function samplePalette(p) {
   if (!stops.length) return;
@@ -217,46 +238,29 @@ function samplePalette(p) {
   live.accent.lerpColors(a.pal.accent, b.pal.accent, t);
   live.tint = lerp(a.pal.tint, b.pal.tint, t);
 
-  /* crossfade the photographs of the two surrounding chapters.
-     The swap happens decisively across the middle of the transition
-     instead of dragging over the whole scroll distance */
-  for (const k in photoOpacity) photoOpacity[k] = 0;
-  if (a.pal.photo === b.pal.photo) {
-    photoOpacity[a.pal.photo] = 1;
-  } else {
-    const pt = smoothstep(clamp01((t - 0.28) / 0.44));
-    photoOpacity[a.pal.photo] = 1 - pt;
-    photoOpacity[b.pal.photo] = pt;
-    /* warm the incoming photo early so its decode never lands mid-fade */
-    const nb = photoEls[b.pal.photo];
-    if (nb && !nb.__warm && t > 0.04) {
-      nb.__warm = true;
-      if (nb.decode) nb.decode().catch(() => {});
-    }
-  }
+  /* keep the flanking pair mounted; fade decisively across the middle
+     of the transition instead of dragging over the whole distance */
+  setActivePair(a.pal.photo, b.pal.photo);
+  fadeA = photoEls[a.pal.photo];
+  fadeB = photoEls[b.pal.photo];
+  fadeMix = fadeA === fadeB ? 0 : smoothstep(clamp01((t - 0.25) / 0.5));
+}
+
+function paintPhoto(el, op, breath) {
+  el.style.opacity = op.toFixed(3);
+  /* slow breath + a gentle pull of depth as a room recedes */
+  const scale = 1.06 + (1 - op) * 0.05 + breath;
+  el.style.transform = `translate3d(0, ${((1 - op) * 1.4).toFixed(2)}vh, 0) scale(${scale.toFixed(4)})`;
 }
 
 function applyPhotos(time) {
-  for (const k in photoEls) {
-    const el = photoEls[k];
-    const op = photoOpacity[k];
-    const prev = parseFloat(el.style.opacity || 0);
-    if (op === 0 && prev === 0) continue;
-    el.style.opacity = op.toFixed(3);
-    /* promote only the photos actually on screen to their own GPU layer
-       (smooth fades); hide and demote the rest (no phone memory blowout) */
-    if (op === 0) {
-      el.style.visibility = "hidden";
-      el.style.willChange = "auto";
-      el.__warm = false;
-    } else if (prev === 0) {
-      el.style.visibility = "visible";
-      el.style.willChange = "opacity, transform";
-    }
-    /* slow breath + a pull of depth as a room recedes */
-    const scale = 1.06 + (1 - op) * 0.06 + Math.sin(time * 0.05) * 0.004;
-    const rise = (1 - op) * 1.6;
-    el.style.transform = `translate3d(0, ${rise.toFixed(2)}vh, 0) scale(${scale.toFixed(4)})`;
+  if (!fadeA) return;
+  const breath = Math.sin(time * 0.05) * 0.004;
+  if (fadeA === fadeB) {
+    paintPhoto(fadeA, 1, breath);
+  } else {
+    paintPhoto(fadeA, 1 - fadeMix, breath);
+    paintPhoto(fadeB, fadeMix, breath);
   }
 }
 
@@ -418,8 +422,8 @@ if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
 }
 
 /* Scrolling is always the visitor's own: no auto-settle, no snapping.
-   The nav dots still land each chapter on its ideal frame when clicked
-   (snapPoints feeds smoothTo), but free scrolling is never interfered with. */
+   The nav dots still land each chapter on its ideal frame when clicked,
+   but free scrolling is never interfered with. */
 
 /* in-page anchor links glide instead of jumping */
 document.addEventListener("click", (e) => {

@@ -30,6 +30,7 @@ body {
   font-weight: 300;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.18s linear, color 0.18s linear;
 }
 
 ::selection { background: var(--accent); color: #1a1206; }
@@ -79,7 +80,8 @@ body.no-webgl {
 /* Stella's portrait is vertical, keep her head in frame when it fills the screen */
 .photo--stella { object-position: 50% 32%; }
 
-/* the day-cycle palette grades every photograph */
+/* the day-cycle palette grades every photograph. The palette updates in
+   small steps, so the tint blends between them for a continuous flow */
 .photo-tint {
   position: fixed;
   inset: 0;
@@ -87,6 +89,7 @@ body.no-webgl {
   pointer-events: none;
   background: var(--bg);
   opacity: 0.45;
+  transition: background-color 0.18s linear, opacity 0.18s linear;
 }
 
 #scene {
