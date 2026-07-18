@@ -238,12 +238,13 @@ function samplePalette(p) {
   live.accent.lerpColors(a.pal.accent, b.pal.accent, t);
   live.tint = lerp(a.pal.tint, b.pal.tint, t);
 
-  /* keep the flanking pair mounted; fade decisively across the middle
-     of the transition instead of dragging over the whole distance */
+  /* keep the flanking pair mounted; each photograph stays whole and
+     crisp for most of its chapter, then hands over in one short,
+     deliberate crossfade around the boundary */
   setActivePair(a.pal.photo, b.pal.photo);
   fadeA = photoEls[a.pal.photo];
   fadeB = photoEls[b.pal.photo];
-  fadeMix = fadeA === fadeB ? 0 : smoothstep(clamp01((t - 0.25) / 0.5));
+  fadeMix = fadeA === fadeB ? 0 : smoothstep(clamp01((t - 0.33) / 0.34));
 }
 
 function paintPhoto(el, op, breath) {
@@ -303,7 +304,7 @@ const observer = new IntersectionObserver(
         observer.unobserve(e.target);
       }
     }),
-  { threshold: 0.35 }
+  { threshold: 0.22 }
 );
 $$(".panel").forEach((p) => observer.observe(p));
 
@@ -512,7 +513,9 @@ function frame(now) {
 
   const t = clock.getElapsedTime();
 
-  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : smooth(9, dt));
+  /* one smoothing stage, not two: while the wheel glide is already
+     smoothing the page, the world tracks it near-directly */
+  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : smooth(wheelActive ? 18 : 10, dt));
   const p = clamp01(scrollCur / scrollMax);
 
   samplePalette(p);

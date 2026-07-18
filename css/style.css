@@ -114,7 +114,7 @@ body.no-webgl {
   pointer-events: none;
   opacity: 0.045;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  animation: grainShift 1.4s steps(4) infinite;
+  animation: grainShift 2.2s steps(6) infinite;
 }
 
 @keyframes grainShift {
@@ -277,10 +277,11 @@ header {
 
 main { position: relative; z-index: 3; }
 
-.chapter { height: 190vh; position: relative; }
-.chapter.hero { height: 130vh; }
-.chapter.room { height: 150vh; }
-.chapter.finale { height: 170vh; }
+/* brisker pacing: less wading between moments, transitions arrive sooner */
+.chapter { height: 158vh; position: relative; }
+.chapter.hero { height: 118vh; }
+.chapter.room { height: 132vh; }
+.chapter.finale { height: 148vh; }
 
 .panel {
   position: sticky;
