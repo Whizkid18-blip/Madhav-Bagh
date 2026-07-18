@@ -109,8 +109,7 @@ body.no-webgl {
   inset: -100px;
   z-index: 5;
   pointer-events: none;
-  opacity: 0.08;
-  mix-blend-mode: overlay;
+  opacity: 0.045;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
   animation: grainShift 1.4s steps(4) infinite;
 }
@@ -617,6 +616,7 @@ footer {
   .display { line-height: 0.92; }
   .cue { display: none; }
   .progress { width: 1.5px; }
+  .grain { display: none; } /* phones: skip the film grain, save the GPU */
   .panel::before {
     background: linear-gradient(
       180deg,

@@ -189,6 +189,8 @@ function measure() {
       Math.round(el.offsetTop + Math.max(0, el.offsetHeight - vh) * 0.5)
     )
   );
+
+  if (navTargets.length) refreshNavTops();
 }
 
 const live = {
@@ -385,10 +387,16 @@ if (!reduced && !mobile && matchMedia("(pointer: fine)").matches) {
   addEventListener("keydown", () => { wheelActive = false; }, { passive: true });
   addEventListener("touchstart", () => { wheelActive = false; }, { passive: true });
   addEventListener("wheel", (e) => {
-    if (e.ctrlKey || e.deltaMode === 0) return; /* pinch-zoom or trackpad → native */
+    if (e.ctrlKey) return; /* pinch-zoom stays native */
+    /* notched mouse wheels: line-mode (Firefox) or large integer pixel
+       deltas (Chrome/Edge on Windows). Precision trackpads send small
+       fractional deltas and are already smooth, so they stay native. */
+    const lines = e.deltaMode === 1;
+    const notched = lines || (Math.abs(e.deltaY) >= 80 && Number.isInteger(e.deltaY));
+    if (!notched) return;
     e.preventDefault();
     const max = Math.max(0, document.documentElement.scrollHeight - innerHeight);
-    wheelTarget = Math.max(0, Math.min(max, wheelTarget + e.deltaY * 16));
+    wheelTarget = Math.max(0, Math.min(max, wheelTarget + (lines ? e.deltaY * 16 : e.deltaY)));
     wheelActive = true;
   }, { passive: false });
 }
@@ -445,7 +453,12 @@ const NAV = [
 ];
 const navButtons = [];
 const navTargets = [];
+let navTops = []; /* cached: reading offsetTop every frame forces layout */
 let navActive = -1;
+
+function refreshNavTops() {
+  navTops = navTargets.map((el) => el.offsetTop);
+}
 
 function buildNav() {
   if (mobile) return;
@@ -466,14 +479,15 @@ function buildNav() {
     navTargets.push(el);
   }
   document.body.appendChild(rail);
+  refreshNavTops();
 }
 
 function updateNav() {
-  if (!navTargets.length) return;
+  if (!navTops.length) return;
   const probe = scrollCur + vh * 0.5;
   let idx = 0;
-  for (let i = 0; i < navTargets.length; i++) {
-    if (navTargets[i].offsetTop <= probe) idx = i;
+  for (let i = 0; i < navTops.length; i++) {
+    if (navTops[i] <= probe) idx = i;
   }
   if (idx !== navActive) {
     navButtons[navActive]?.classList.remove("on");
@@ -485,6 +499,7 @@ function updateNav() {
 /* ── the walk ────────────────────────────── */
 
 let lastInk = "", lastAccent = "", lastBg = "";
+let lastVarWrite = 0;
 const clock = new THREE.Clock();
 
 /* time-based smoothing: identical feel at 60Hz, 120Hz, or a struggling 30fps */
@@ -493,6 +508,7 @@ const smooth = (k, dt) => 1 - Math.exp(-k * dt);
 
 function frame(now) {
   requestAnimationFrame(frame);
+  now = now || performance.now();
   const dt = Math.min(0.05, prevFrameTime ? (now - prevFrameTime) / 1000 : 1 / 60);
   prevFrameTime = now;
 
@@ -509,24 +525,34 @@ function frame(now) {
 
   samplePalette(p);
 
-  /* css variables follow the world */
-  const inkHex = "#" + live.ink.getHexString();
-  const accentHex = "#" + live.accent.getHexString();
-  const bgHex = "#" + live.bg.getHexString();
-  if (inkHex !== lastInk) { rootStyle.setProperty("--ink", inkHex); lastInk = inkHex; }
-  if (accentHex !== lastAccent) { rootStyle.setProperty("--accent", accentHex); lastAccent = accentHex; }
-  if (bgHex !== lastBg) { rootStyle.setProperty("--bg", bgHex); lastBg = bgHex; }
+  /* css variables follow the world. Writing them re-styles the whole
+     document (color-mix, text shadows), so update at ~12Hz: plenty for
+     slow ambient colour drift, a fraction of the style/paint cost */
+  if (now - lastVarWrite > 80) {
+    lastVarWrite = now;
+    const inkHex = "#" + live.ink.getHexString();
+    const accentHex = "#" + live.accent.getHexString();
+    const bgHex = "#" + live.bg.getHexString();
+    if (inkHex !== lastInk) { rootStyle.setProperty("--ink", inkHex); lastInk = inkHex; }
+    if (accentHex !== lastAccent) { rootStyle.setProperty("--accent", accentHex); lastAccent = accentHex; }
+    if (bgHex !== lastBg) { rootStyle.setProperty("--bg", bgHex); lastBg = bgHex; }
+    if (tintEl) tintEl.style.opacity = live.tint.toFixed(3);
+  }
 
   if (progressBar) progressBar.style.transform = `scaleY(${p})`;
-  if (tintEl) tintEl.style.opacity = live.tint.toFixed(3);
   applyPhotos(t);
   updateNav();
 
-  /* big words drift slower than the world, for depth */
+  /* big words drift slower than the world, for depth.
+     Only write styles for the one or two actually moving on screen */
   if (!reduced) {
     for (const it of parallaxItems) {
       const prog = clamp01((scrollCur + vh - it.top) / (it.h + vh));
-      it.el.style.transform = `translate3d(0, ${(0.5 - prog) * 7}vh, 0)`;
+      const yv = Math.round((0.5 - prog) * 700) / 100;
+      if (yv !== it.lastY) {
+        it.lastY = yv;
+        it.el.style.transform = `translate3d(0, ${yv}vh, 0)`;
+      }
     }
   }
 
