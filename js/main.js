@@ -487,18 +487,24 @@ function updateNav() {
 let lastInk = "", lastAccent = "", lastBg = "";
 const clock = new THREE.Clock();
 
-function frame() {
+/* time-based smoothing: identical feel at 60Hz, 120Hz, or a struggling 30fps */
+let prevFrameTime = 0;
+const smooth = (k, dt) => 1 - Math.exp(-k * dt);
+
+function frame(now) {
   requestAnimationFrame(frame);
+  const dt = Math.min(0.05, prevFrameTime ? (now - prevFrameTime) / 1000 : 1 / 60);
+  prevFrameTime = now;
 
   /* ease the page toward the mouse-wheel target (native scroll otherwise) */
   if (wheelActive) {
     if (Math.abs(wheelTarget - scrollY) < 0.6) { scrollTo(0, wheelTarget); wheelActive = false; }
-    else scrollTo(0, scrollY + (wheelTarget - scrollY) * 0.16);
+    else scrollTo(0, scrollY + (wheelTarget - scrollY) * smooth(11, dt));
   }
 
   const t = clock.getElapsedTime();
 
-  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : 0.14);
+  scrollCur += (scrollTarget - scrollCur) * (reduced ? 1 : smooth(9, dt));
   const p = clamp01(scrollCur / scrollMax);
 
   samplePalette(p);
@@ -535,8 +541,9 @@ function frame() {
   /* camera walks the corridor */
   camera.position.z = lerp(CAM_START, CAM_END, p);
   if (!reduced) {
-    mouse.cx += (mouse.x - mouse.cx) * 0.04;
-    mouse.cy += (mouse.y - mouse.cy) * 0.04;
+    const mk = smooth(2.5, dt);
+    mouse.cx += (mouse.x - mouse.cx) * mk;
+    mouse.cy += (mouse.y - mouse.cy) * mk;
   }
   camera.position.x = mouse.cx * 1.7 + Math.sin(t * 0.18) * 0.35;
   camera.position.y = 4.7 - mouse.cy * 0.55 + Math.sin(t * 0.23) * 0.18;
