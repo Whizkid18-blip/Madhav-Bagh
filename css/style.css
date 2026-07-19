@@ -33,6 +33,8 @@ body {
   font-weight: 300;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition: background-color 0.18s linear, color 0.18s linear;
 }
 
@@ -187,6 +189,7 @@ header {
 
 .reserve {
   font-size: 10.5px;
+  font-weight: 500;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--ink);
@@ -399,9 +402,14 @@ main { position: relative; z-index: 3; }
 .figure-card figcaption { text-shadow: none; }
 
 .lede {
-  max-width: 37em;
-  font-size: clamp(1.02rem, 1.45vw, 1.32rem);
-  line-height: 1.85;
+  /* the story reads in the house's own book serif; Fraunces' optical
+     sizing gives a warm text grade at paragraph sizes */
+  font-family: var(--serif);
+  font-weight: 390;
+  max-width: 34em;
+  font-size: clamp(1.08rem, 1.55vw, 1.42rem);
+  line-height: 1.75;
+  letter-spacing: 0.004em;
   color: color-mix(in srgb, var(--ink) 96%, transparent);
 }
 
@@ -549,7 +557,7 @@ main { position: relative; z-index: 3; }
 
 .btn {
   font-size: 11.5px;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--ink);

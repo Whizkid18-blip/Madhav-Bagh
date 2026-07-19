@@ -8,7 +8,7 @@
 import * as THREE from "./vendor/three.module.js";
 
 /* build marker: open the browser console to confirm which build is loaded */
-console.log("Madhav Bagh · build 8 · native scroll + snap");
+console.log("Madhav Bagh · build 9 · serif story text, rewritten copy");
 
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const lerp = (a, b, t) => a + (b - a) * t;
